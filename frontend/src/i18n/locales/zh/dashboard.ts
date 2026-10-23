@@ -288,8 +288,16 @@ export default {
       description: '请选择您要导入到 CC-Switch 的客户端类型：',
       claudeCode: 'Claude Code',
       claudeCodeDesc: '导入为 Claude Code 配置',
+      codexCli: 'Codex CLI',
+      codexCliDesc: '导入为 Codex CLI 配置',
       geminiCli: 'Gemini CLI',
-      geminiCliDesc: '导入为 Gemini CLI 配置'
+      geminiCliDesc: '导入为 Gemini CLI 配置',
+      grokBuild: 'Grok Build',
+      grokBuildDesc: '导入为 Grok Build 配置',
+      modelLabel: '默认模型',
+      modelLoading: '正在获取该分组可用的模型…',
+      modelFailed: '获取模型列表失败，请手动填写模型名',
+      modelManualPlaceholder: '填写该分组可用的模型名'
     },
     // 配额和有效期
     quotaLimit: '额度限制',

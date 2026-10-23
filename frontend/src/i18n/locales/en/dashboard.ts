@@ -283,8 +283,16 @@ export default {
       description: 'Please select the client type to import to CC-Switch:',
       claudeCode: 'Claude Code',
       claudeCodeDesc: 'Import as Claude Code configuration',
+      codexCli: 'Codex CLI',
+      codexCliDesc: 'Import as Codex CLI configuration',
       geminiCli: 'Gemini CLI',
       geminiCliDesc: 'Import as Gemini CLI configuration',
+      grokBuild: 'Grok Build',
+      grokBuildDesc: 'Import as Grok Build configuration',
+      modelLabel: 'Default Model',
+      modelLoading: 'Loading models available to this group…',
+      modelFailed: 'Failed to load the model list; enter a model name manually',
+      modelManualPlaceholder: 'Enter a model available to this group'
     },
     // Quota and expiration
     quotaLimit: 'Quota Limit',

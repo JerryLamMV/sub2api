@@ -1091,29 +1091,44 @@
         <p class="text-sm text-gray-600 dark:text-gray-400">
           {{ t('keys.ccsClientSelect.description') }}
 	        </p>
-	        <div class="grid grid-cols-2 gap-3">
+	        <div v-if="ccsModelSelectVisible" class="space-y-1.5">
+	          <label class="text-sm font-medium text-gray-700 dark:text-gray-300" for="ccs-model-select">
+	            {{ t('keys.ccsClientSelect.modelLabel') }}
+	          </label>
+	          <Select
+	            id="ccs-model-select"
+	            :model-value="ccsSelectedModel"
+	            :options="ccsModelSelectOptions"
+	            :disabled="ccsModelsLoading"
+	            @update:model-value="onCcsModelSelect"
+	          />
+	          <input
+	            v-if="ccsModelsFailed"
+	            v-model="ccsSelectedModel"
+	            type="text"
+	            class="input"
+	            :placeholder="t('keys.ccsClientSelect.modelManualPlaceholder')"
+	          />
+	          <p v-if="ccsModelsLoading" class="text-xs text-gray-500 dark:text-gray-400">
+	            {{ t('keys.ccsClientSelect.modelLoading') }}
+	          </p>
+	          <p v-else-if="ccsModelsFailed" class="text-xs text-amber-600 dark:text-amber-400">
+	            {{ t('keys.ccsClientSelect.modelFailed') }}
+	          </p>
+	        </div>
+	        <div :class="ccsClientOptions.length >= 3 ? 'grid grid-cols-3 gap-3' : 'grid grid-cols-2 gap-3'">
 	          <button
-	            @click="handleCcsClientSelect('claude')"
+	            v-for="option in ccsClientOptions"
+	            :key="option.clientType"
+	            @click="handleCcsClientSelect(option.clientType)"
 	            class="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-gray-200 dark:border-dark-600 hover:border-primary-500 dark:hover:border-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-all"
 	          >
-	            <Icon name="terminal" size="xl" class="text-gray-600 dark:text-gray-400" />
+	            <Icon :name="ccsClientLabels[option.clientType].icon" size="xl" class="text-gray-600 dark:text-gray-400" />
 	            <span class="font-medium text-gray-900 dark:text-white">{{
-	              t('keys.ccsClientSelect.claudeCode')
+	              ccsClientLabels[option.clientType].label
 	            }}</span>
 	            <span class="text-xs text-gray-500 dark:text-gray-400">{{
-	              t('keys.ccsClientSelect.claudeCodeDesc')
-	            }}</span>
-	          </button>
-	          <button
-	            @click="handleCcsClientSelect('gemini')"
-	            class="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-gray-200 dark:border-dark-600 hover:border-primary-500 dark:hover:border-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-all"
-	          >
-	            <Icon name="sparkles" size="xl" class="text-gray-600 dark:text-gray-400" />
-	            <span class="font-medium text-gray-900 dark:text-white">{{
-	              t('keys.ccsClientSelect.geminiCli')
-	            }}</span>
-	            <span class="text-xs text-gray-500 dark:text-gray-400">{{
-	              t('keys.ccsClientSelect.geminiCliDesc')
+	              ccsClientLabels[option.clientType].description
 	            }}</span>
 	          </button>
 	        </div>
@@ -1234,8 +1249,13 @@ import { KEY_GROUP_PROVIDERS, KEY_GROUP_PROVIDER_ICONS, getKeyGroupProvider, typ
 import {
   CC_SWITCH_USAGE_SCRIPT,
   buildCcSwitchImportDeeplink,
+  ccSwitchImportNeedsModel,
+  listCcSwitchClientOptions,
+  pickCcSwitchModel,
+  type CcSwitchClientOption,
   type CcSwitchClientType
 } from '@/utils/ccswitchImport'
+import { fetchApiKeyModelIds } from '@/api/codex'
 
 // Helper to format date for datetime-local input
 const formatDateTimeLocal = (isoDate: string): string => {
@@ -1403,6 +1423,12 @@ const showResetQuotaDialog = ref(false)
 const showResetRateLimitDialog = ref(false)
 const showUseKeyModal = ref(false)
 const showCcsClientSelect = ref(false)
+const ccsClientOptions = ref<CcSwitchClientOption[]>([])
+const ccsModelOptions = ref<string[]>([])
+const ccsSelectedModel = ref('')
+const ccsModelsLoading = ref(false)
+const ccsModelsFailed = ref(false)
+let ccsModelRequestID = 0
 const showColumnDropdown = ref(false)
 const pendingCcsRow = ref<ApiKey | null>(null)
 const selectedKey = ref<ApiKey | null>(null)
@@ -2011,19 +2037,98 @@ const resetRateLimitUsage = async () => {
 
 const importToCcswitch = (row: ApiKey) => {
   const platform = row.group?.platform || 'anthropic'
+  const options = listCcSwitchClientOptions(platform, {
+    allowMessagesDispatch: !!row.group?.allow_messages_dispatch
+  })
+  const needsModel = options.some(option => ccSwitchImportNeedsModel(platform, option.clientType))
 
-  // For antigravity platform, show client selection dialog
-  if (platform === 'antigravity') {
+  // 平台支持多个客户端（国产模型分组、复合分组、openai/gemini 等）或需要挑选
+  // 分组真实模型时弹出选择卡片；anthropic 等单一去处且无需挑模型的直接导入
+  if (options.length > 1 || needsModel) {
     pendingCcsRow.value = row
+    ccsClientOptions.value = options
+    resetCcsModelState()
     showCcsClientSelect.value = true
+    if (needsModel) {
+      void loadCcsModels(row)
+    }
     return
   }
 
   // For other platforms, execute directly
-  executeCcsImport(row, platform === 'gemini' ? 'gemini' : 'claude')
+  executeCcsImport(row, options[0]?.clientType || 'claude')
 }
 
-const executeCcsImport = (row: ApiKey, clientType: CcSwitchClientType) => {
+// 国产模型与复合分组不提供原生 Claude/GPT 模型，导入前先取该密钥分组的
+// 真实可用模型作为默认模型，避免导入后客户端首个请求 404。
+const loadCcsModels = async (row: ApiKey) => {
+  const platform = row.group?.platform || 'anthropic'
+  const baseUrl = publicSettings.value?.api_base_url || window.location.origin
+  const requestID = ++ccsModelRequestID
+  ccsModelsLoading.value = true
+  ccsModelsFailed.value = false
+  try {
+    const models = await fetchApiKeyModelIds(baseUrl, row.key)
+    if (requestID !== ccsModelRequestID) return
+    ccsModelOptions.value = models
+    ccsSelectedModel.value = pickCcSwitchModel(platform, models)
+  } catch {
+    if (requestID !== ccsModelRequestID) return
+    ccsModelsFailed.value = true
+    ccsSelectedModel.value = pickCcSwitchModel(platform, [])
+  } finally {
+    if (requestID === ccsModelRequestID) {
+      ccsModelsLoading.value = false
+    }
+  }
+}
+
+const resetCcsModelState = () => {
+  ccsModelRequestID += 1
+  ccsModelOptions.value = []
+  ccsSelectedModel.value = ''
+  ccsModelsLoading.value = false
+  ccsModelsFailed.value = false
+}
+
+const ccsModelSelectVisible = computed(() => {
+  if (!pendingCcsRow.value) return false
+  const platform = pendingCcsRow.value.group?.platform || 'anthropic'
+  return ccsClientOptions.value.some(option => ccSwitchImportNeedsModel(platform, option.clientType))
+})
+
+const ccsModelSelectOptions = computed(() =>
+  ccsModelOptions.value.map(model => ({ value: model, label: model }))
+)
+
+const onCcsModelSelect = (value: unknown) => {
+  ccsSelectedModel.value = typeof value === 'string' ? value : ''
+}
+
+const ccsClientLabels = computed<Record<CcSwitchClientType, { label: string; description: string; icon: 'terminal' | 'sparkles' }>>(() => ({
+  claude: {
+    label: t('keys.ccsClientSelect.claudeCode'),
+    description: t('keys.ccsClientSelect.claudeCodeDesc'),
+    icon: 'terminal'
+  },
+  codex: {
+    label: t('keys.ccsClientSelect.codexCli'),
+    description: t('keys.ccsClientSelect.codexCliDesc'),
+    icon: 'terminal'
+  },
+  gemini: {
+    label: t('keys.ccsClientSelect.geminiCli'),
+    description: t('keys.ccsClientSelect.geminiCliDesc'),
+    icon: 'sparkles'
+  },
+  grokbuild: {
+    label: t('keys.ccsClientSelect.grokBuild'),
+    description: t('keys.ccsClientSelect.grokBuildDesc'),
+    icon: 'terminal'
+  }
+}))
+
+const executeCcsImport = (row: ApiKey, clientType: CcSwitchClientType, model?: string) => {
   const baseUrl = publicSettings.value?.api_base_url || window.location.origin
   const platform = row.group?.platform || 'anthropic'
 
@@ -2035,7 +2140,8 @@ const executeCcsImport = (row: ApiKey, clientType: CcSwitchClientType) => {
     clientType,
     providerName,
     apiKey: row.key,
-    usageScript
+    usageScript,
+    model
   })
 
   try {
@@ -2055,15 +2161,16 @@ const executeCcsImport = (row: ApiKey, clientType: CcSwitchClientType) => {
 
 const handleCcsClientSelect = (clientType: CcSwitchClientType) => {
   if (pendingCcsRow.value) {
-    executeCcsImport(pendingCcsRow.value, clientType)
+    executeCcsImport(pendingCcsRow.value, clientType, ccsSelectedModel.value.trim() || undefined)
   }
-  showCcsClientSelect.value = false
-  pendingCcsRow.value = null
+  closeCcsClientSelect()
 }
 
 const closeCcsClientSelect = () => {
   showCcsClientSelect.value = false
   pendingCcsRow.value = null
+  ccsClientOptions.value = []
+  resetCcsModelState()
 }
 
 function formatResetTime(resetAt: string | null): string {

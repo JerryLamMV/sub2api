@@ -274,6 +274,7 @@ import BaseDialog from '@/components/common/BaseDialog.vue'
 import Icon from '@/components/icons/Icon.vue'
 import { useClipboard } from '@/composables/useClipboard'
 import { buildCodexModelCatalogUrl, fetchCodexModelsManifest } from '@/api/codex'
+import { CODEX_PREFERRED_MODELS } from '@/constants/codexModelPreferences'
 import type { GroupPlatform } from '@/types'
 import {
   findCodexCatalogModel,
@@ -1308,20 +1309,7 @@ function generateRoutedCodexFiles(
 ): FileConfig[] {
   const isWindows = activeTab.value === 'windows'
   const configDir = isWindows ? '%userprofile%\\.codex' : '~/.codex'
-  const preferredModels: Partial<Record<GroupPlatform, string>> = {
-    openai: 'gpt-5.5',
-    anthropic: 'claude-sonnet-4-6',
-    gemini: 'gemini-2.5-pro',
-    antigravity: 'claude-sonnet-4-6',
-    grok: 'grok-4.5',
-    kimi: 'kimi-k2.5',
-    zhipu: 'glm-4.7',
-    deepseek: 'deepseek-v4-pro',
-    minimax: 'MiniMax-M3',
-    opencode_go: 'glm-5.3',
-    composite: 'gpt-5.5'
-  }
-  const preferredModel = preferredModels[platform] || ''
+  const preferredModel = CODEX_PREFERRED_MODELS[platform] || ''
   const model = selectCodexCatalogModel(preferredModel)
   const labels: Record<GroupPlatform, string> = {
     anthropic: 'Anthropic',

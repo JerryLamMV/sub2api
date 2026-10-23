@@ -60,3 +60,38 @@ export async function fetchCodexModelsManifest(
     responseBytes: new TextEncoder().encode(text).byteLength
   }
 }
+
+/**
+ * 拉取某个 API Key 所属分组的可用模型 ID（OpenAI 风格列表，不带
+ * client_version，比 Codex manifest 轻量）。导入 CC Switch 时用它挑选
+ * 分组真实可用的默认模型。
+ */
+export async function fetchApiKeyModelIds(
+  baseUrl: string,
+  apiKey: string,
+  signal?: AbortSignal
+): Promise<string[]> {
+  const response = await fetch(buildCodexModelCatalogUrl(baseUrl), {
+    method: 'GET',
+    headers: {
+      Accept: 'application/json',
+      Authorization: `Bearer ${apiKey}`
+    },
+    cache: 'no-store',
+    signal
+  })
+
+  if (!response.ok) {
+    throw new Error(`Models request failed with status ${response.status}`)
+  }
+
+  const payload: unknown = await response.json()
+  const data = (payload as { data?: unknown } | null)?.data
+  if (!Array.isArray(data)) {
+    throw new Error('Models response is not a valid list')
+  }
+  return data.flatMap(item => {
+    const id = (item as { id?: unknown } | null)?.id
+    return typeof id === 'string' && id.trim() ? [id.trim()] : []
+  })
+}

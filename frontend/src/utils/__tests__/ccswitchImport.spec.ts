@@ -3,7 +3,11 @@ import {
   CC_SWITCH_USAGE_SCRIPT,
   GROK_CC_SWITCH_MODEL,
   OPENAI_CC_SWITCH_CODEX_MODEL,
-  buildCcSwitchImportDeeplink
+  buildCcSwitchImportDeeplink,
+  ccSwitchImportNeedsModel,
+  listCcSwitchClientOptions,
+  pickCcSwitchModel,
+  resolveCcSwitchImportConfig
 } from '@/utils/ccswitchImport'
 import type { GroupPlatform } from '@/types'
 
@@ -39,7 +43,7 @@ describe('ccswitchImport utils', () => {
         ...baseInput,
         baseUrl,
         platform: 'openai',
-        clientType: 'claude'
+        clientType: 'codex'
       })
     )
 
@@ -99,6 +103,184 @@ describe('ccswitchImport utils', () => {
     expect(params.get('app')).toBe('gemini')
     expect(params.get('endpoint')).toBe(`${baseInput.baseUrl}/antigravity`)
     expect(params.has('model')).toBe(false)
+  })
+
+  it.each([
+    'deepseek',
+    'kimi',
+    'zhipu',
+    'minimax',
+    'opencode_go',
+    'command_code',
+    'cline',
+    'composite'
+  ] as GroupPlatform[])('imports %s groups into the Codex app with the group model', (platform) => {
+    const params = paramsFromDeeplink(
+      buildCcSwitchImportDeeplink({
+        ...baseInput,
+        platform,
+        clientType: 'codex',
+        model: 'cn:deepseek-v4.1-flash'
+      })
+    )
+
+    expect(params.get('app')).toBe('codex')
+    expect(params.get('endpoint')).toBe(baseInput.baseUrl)
+    expect(params.get('model')).toBe('cn:deepseek-v4.1-flash')
+    expect(params.has('haikuModel')).toBe(false)
+  })
+
+  it('imports CN provider groups into the Claude app with the model and its aliases', () => {
+    const params = paramsFromDeeplink(
+      buildCcSwitchImportDeeplink({
+        ...baseInput,
+        platform: 'deepseek',
+        clientType: 'claude',
+        model: 'cn:deepseek-v4.1-flash'
+      })
+    )
+
+    expect(params.get('app')).toBe('claude')
+    expect(params.get('endpoint')).toBe(baseInput.baseUrl)
+    expect(params.get('model')).toBe('cn:deepseek-v4.1-flash')
+    expect(params.get('haikuModel')).toBe('cn:deepseek-v4.1-flash')
+    expect(params.get('sonnetModel')).toBe('cn:deepseek-v4.1-flash')
+    expect(params.get('opusModel')).toBe('cn:deepseek-v4.1-flash')
+  })
+
+  it('keeps composite gemini imports without a model parameter', () => {
+    const params = paramsFromDeeplink(
+      buildCcSwitchImportDeeplink({
+        ...baseInput,
+        platform: 'composite',
+        clientType: 'gemini',
+        model: 'cn:deepseek-v4.1-flash'
+      })
+    )
+
+    expect(params.get('app')).toBe('gemini')
+    expect(params.get('endpoint')).toBe(baseInput.baseUrl)
+    expect(params.has('model')).toBe(false)
+  })
+
+  it('omits the model parameter for CN codex imports without a known model', () => {
+    expect(resolveCcSwitchImportConfig('deepseek', 'codex', 'https://api.example.com').model)
+      .toBeUndefined()
+  })
+
+
+  describe('openai and gemini CC Switch imports', () => {
+    it('imports openai groups as claude code without a model when dispatch is on', () => {
+      const params = paramsFromDeeplink(
+        buildCcSwitchImportDeeplink({
+          ...baseInput,
+          platform: 'openai',
+          clientType: 'claude',
+          model: 'gpt-5.6-sol'
+        })
+      )
+
+      expect(params.get('app')).toBe('claude')
+      expect(params.get('endpoint')).toBe(baseInput.baseUrl)
+      expect(params.has('model')).toBe(false)
+      expect(params.has('haikuModel')).toBe(false)
+    })
+
+    it('imports openai groups as codex with the selected group model', () => {
+      const params = paramsFromDeeplink(
+        buildCcSwitchImportDeeplink({
+          ...baseInput,
+          platform: 'openai',
+          clientType: 'codex',
+          model: 'gpt-5.6-sol'
+        })
+      )
+
+      expect(params.get('app')).toBe('codex')
+      expect(params.get('model')).toBe('gpt-5.6-sol')
+    })
+
+    it('imports gemini groups as codex with the group model', () => {
+      const params = paramsFromDeeplink(
+        buildCcSwitchImportDeeplink({
+          ...baseInput,
+          platform: 'gemini',
+          clientType: 'codex',
+          model: 'gemini-2.5-pro'
+        })
+      )
+
+      expect(params.get('app')).toBe('codex')
+      expect(params.get('endpoint')).toBe(baseInput.baseUrl)
+      expect(params.get('model')).toBe('gemini-2.5-pro')
+    })
+
+    it('falls back to the platform default model for gemini codex imports', () => {
+      expect(resolveCcSwitchImportConfig('gemini', 'codex', 'https://api.example.com').model)
+        .toBe('gemini-2.5-pro')
+    })
+  })
+})
+
+describe('CC Switch client options', () => {
+  it('offers codex and claude for CN provider platforms', () => {
+    expect(listCcSwitchClientOptions('deepseek').map(option => option.clientType))
+      .toEqual(['codex', 'claude'])
+    expect(listCcSwitchClientOptions('kimi').map(option => option.clientType))
+      .toEqual(['codex', 'claude'])
+  })
+
+  it('offers codex, claude and gemini for composite groups', () => {
+    expect(listCcSwitchClientOptions('composite').map(option => option.clientType))
+      .toEqual(['codex', 'claude', 'gemini'])
+  })
+
+  it('keeps single-client platforms direct', () => {
+    expect(listCcSwitchClientOptions('anthropic').map(option => option.clientType)).toEqual(['claude'])
+    expect(listCcSwitchClientOptions('openai').map(option => option.clientType)).toEqual(['codex'])
+    expect(listCcSwitchClientOptions('grok').map(option => option.clientType)).toEqual(['grokbuild'])
+    expect(listCcSwitchClientOptions('antigravity').map(option => option.clientType))
+      .toEqual(['claude', 'gemini'])
+  })
+
+  it('offers gemini and codex for gemini groups', () => {
+    expect(listCcSwitchClientOptions('gemini').map(option => option.clientType))
+      .toEqual(['gemini', 'codex'])
+  })
+
+  it('adds claude code for openai groups with messages dispatch enabled', () => {
+    expect(listCcSwitchClientOptions('openai', { allowMessagesDispatch: true }).map(option => option.clientType))
+      .toEqual(['codex', 'claude'])
+  })
+
+  it('only clients that need a real group model report it', () => {
+    expect(ccSwitchImportNeedsModel('deepseek', 'codex')).toBe(true)
+    expect(ccSwitchImportNeedsModel('composite', 'claude')).toBe(true)
+    expect(ccSwitchImportNeedsModel('openai', 'codex')).toBe(true)
+    expect(ccSwitchImportNeedsModel('openai', 'claude')).toBe(false)
+    expect(ccSwitchImportNeedsModel('gemini', 'codex')).toBe(true)
+    expect(ccSwitchImportNeedsModel('anthropic', 'claude')).toBe(false)
+    expect(ccSwitchImportNeedsModel('gemini', 'gemini')).toBe(false)
+  })
+})
+
+describe('pickCcSwitchModel', () => {
+  it('prefers the platform model when the group exposes it exactly', () => {
+    expect(pickCcSwitchModel('deepseek', ['cn:auto', 'deepseek-v4-pro', 'deepseek-v4.1-flash']))
+      .toBe('deepseek-v4-pro')
+  })
+
+  it('falls back to a partial match for prefixed model names', () => {
+    expect(pickCcSwitchModel('zhipu', ['cn:auto', 'cn:glm-4.7'])).toBe('cn:glm-4.7')
+  })
+
+  it('uses the first available model when nothing matches', () => {
+    expect(pickCcSwitchModel('kimi', ['cn:auto', 'cn:kimi-k3-1'])).toBe('cn:auto')
+  })
+
+  it('falls back to the platform default when the model list is empty', () => {
+    expect(pickCcSwitchModel('minimax', [])).toBe('MiniMax-M3')
+    expect(pickCcSwitchModel('unknown-platform', [])).toBe('')
   })
 })
 
