@@ -319,6 +319,7 @@ export default {
         minimax: 'MiniMax',
         opencode_go: 'OpenCode',
         typesafe: 'TypeSafe / Jev',
+        workbuddy: 'WorkBuddy',
       },
       cnProviders: {
         accountMode: {
@@ -744,6 +745,7 @@ export default {
       setupTokenLongLived: 'Setup Token（长期有效）',
       baseUrl: 'Base URL',
       baseUrlHint: '留空使用官方 Anthropic API',
+      workbuddyBaseUrlHint: '留空使用管理端设置里的 WorkBuddy 默认地址；那里也没配置时必须在这里填写',
       apiKeyRequired: 'API Key *',
       apiKeyPlaceholder: 'sk-ant-api03-...',
       apiKeyHint: '您的 Claude Console API Key',

@@ -5310,6 +5310,25 @@
                     {{ t("admin.settings.gatewayForwarding.grokDefaultBaseURLModeHint") }}
                   </p>
                 </div>
+                <div class="md:col-span-2">
+                  <label
+                    for="workbuddy-base-url"
+                    class="text-sm font-medium text-gray-700 dark:text-gray-300"
+                  >
+                    {{ t("admin.settings.gatewayForwarding.workbuddyBaseURL") }}
+                  </label>
+                  <input
+                    id="workbuddy-base-url"
+                    v-model="form.workbuddy_base_url"
+                    type="url"
+                    class="input mt-2 w-full"
+                    placeholder="http://127.0.0.1:7863"
+                    data-testid="workbuddy-base-url"
+                  />
+                  <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                    {{ t("admin.settings.gatewayForwarding.workbuddyBaseURLHint") }}
+                  </p>
+                </div>
 
               <!-- OpenAI Responses 首 token 统计 -->
               <div class="border-b border-gray-100 pb-5 dark:border-dark-700 md:col-span-2">
@@ -9945,6 +9964,7 @@ const form = reactive<SettingsForm>({
   grok_default_text_model: "grok-4.5",
   grok_cross_client_model_map_enabled: false,
   grok_default_base_url_mode: "cli",
+  workbuddy_base_url: "",
   // Identity patch (Claude -> Gemini)
   enable_identity_patch: true,
   identity_patch_prompt: "",
@@ -11614,6 +11634,7 @@ async function saveSettings() {
       grok_cross_client_model_map_enabled:
         form.grok_cross_client_model_map_enabled,
       grok_default_base_url_mode: form.grok_default_base_url_mode,
+      workbuddy_base_url: form.workbuddy_base_url.trim(),
       enable_identity_patch: form.enable_identity_patch,
       identity_patch_prompt: form.identity_patch_prompt,
       min_claude_code_version: form.min_claude_code_version,

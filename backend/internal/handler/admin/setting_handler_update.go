@@ -347,6 +347,9 @@ type UpdateSettingsRequest struct {
 	GrokCrossClientModelMapEnabled *bool   `json:"grok_cross_client_model_map_enabled"`
 	GrokDefaultBaseURLMode         *string `json:"grok_default_base_url_mode"`
 
+	// WorkBuddy 默认端点（自建部署的服务，没有公开官方域名；留空表示未配置）
+	WorkbuddyBaseURL *string `json:"workbuddy_base_url"`
+
 	// Available Channels feature switch (user-facing)
 	AvailableChannelsEnabled *bool `json:"available_channels_enabled"`
 
@@ -1972,6 +1975,12 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 			}
 			return previousSettings.GrokDefaultBaseURLMode
 		}(),
+		WorkbuddyBaseURL: func() string {
+			if req.WorkbuddyBaseURL != nil {
+				return strings.TrimSpace(*req.WorkbuddyBaseURL)
+			}
+			return previousSettings.WorkbuddyBaseURL
+		}(),
 		AvailableChannelsEnabled: func() bool {
 			if req.AvailableChannelsEnabled != nil {
 				return *req.AvailableChannelsEnabled
@@ -2440,6 +2449,8 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		GrokDefaultTextModel:           updatedSettings.GrokDefaultTextModel,
 		GrokCrossClientModelMapEnabled: updatedSettings.GrokCrossClientModelMapEnabled,
 		GrokDefaultBaseURLMode:         updatedSettings.GrokDefaultBaseURLMode,
+
+		WorkbuddyBaseURL: updatedSettings.WorkbuddyBaseURL,
 
 		AvailableChannelsEnabled: updatedSettings.AvailableChannelsEnabled,
 		SubscriptionEnabled:      updatedSettings.SubscriptionEnabled,

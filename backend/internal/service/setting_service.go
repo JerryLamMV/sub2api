@@ -133,6 +133,10 @@ type SettingService struct {
 	openAICodexVersionSF        singleflight.Group
 	claudeCodeVersionCache      atomic.Value // *cachedClaudeCodeClientVersion
 	claudeCodeVersionSF         singleflight.Group
+	// workbuddyBaseURLCache 缓存管理端下发的 WorkBuddy 默认端点，
+	// 网关热路径（provider profile → Account.GetOpenAIBaseURL）无 ctx 读取。
+	workbuddyBaseURLCache atomic.Value // *cachedWorkbuddyBaseURL
+	workbuddyBaseURLSF    singleflight.Group
 	codexRestrictionPolicyCache atomic.Value // *cachedCodexRestrictionPolicy
 	codexRestrictionPolicySF    singleflight.Group
 

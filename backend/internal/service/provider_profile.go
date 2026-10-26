@@ -45,6 +45,10 @@ type ProviderProfile struct {
 	// ModelCatalog 表示上游 {Chat Completions 基址}/models 为每个模型给出
 	// supported_endpoints；按模型分流时据此判断模型支持哪些协议（见 model_protocol_catalog.go）。
 	ModelCatalog bool
+	// DefaultBaseURLResolver 为没有内置官方域名的供应商（如自建部署的 WorkBuddy）
+	// 提供运行期默认端点：仅当 BaseURLs 登记了该协议但值为空串时调用，返回空串表示
+	// 尚未配置。为空表示该供应商的端点全部编译期内置。
+	DefaultBaseURLResolver func(protocol string) string
 }
 
 // providerDefaultTestModel 返回账号连接测试未指定模型时的默认模型；非多协议供应商或
@@ -73,14 +77,31 @@ func (p *ProviderProfile) Endpoints(mode string) ProviderEndpoints {
 	return p.Modes[p.DefaultMode]
 }
 
-// DefaultBaseURL 返回指定接入模式与上游协议的官方默认基址；该模式不提供此协议时为空串。
+// DefaultBaseURL 返回指定接入模式与上游协议的默认基址；该模式不提供此协议时为空串，
+// 已登记该协议但端点由管理端设置下发且尚未配置时同样为空串（见 DefaultBaseURLResolver）。
 func (p *ProviderProfile) DefaultBaseURL(mode, protocol string) string {
-	return p.Endpoints(mode).BaseURLs[protocol]
+	if p == nil {
+		return ""
+	}
+	endpoints := p.Endpoints(mode)
+	if baseURL := endpoints.BaseURLs[protocol]; baseURL != "" {
+		return baseURL
+	}
+	if _, declared := endpoints.BaseURLs[protocol]; declared && p.DefaultBaseURLResolver != nil {
+		return p.DefaultBaseURLResolver(protocol)
+	}
+	return ""
 }
 
-// SupportsProtocol 报告指定接入模式是否提供该协议的原生端点。
+// SupportsProtocol 报告指定接入模式是否提供该协议的原生端点。判定只看协议是否登记，
+// 不看默认基址是否已填写：端点由管理端设置下发的供应商（WorkBuddy）在配置前同样
+// 具备该协议的转换语义，否则表单与能力判定会随配置状态抖动。
 func (p *ProviderProfile) SupportsProtocol(mode, protocol string) bool {
-	return p.DefaultBaseURL(mode, protocol) != ""
+	if p == nil {
+		return false
+	}
+	_, ok := p.Endpoints(mode).BaseURLs[protocol]
+	return ok
 }
 
 // providerProfiles 是多协议 API Key 供应商的单一数据来源。新增同类供应商时在此
@@ -218,6 +239,21 @@ var providerProfiles = map[string]*ProviderProfile{
 		Modes: map[string]ProviderEndpoints{
 			AccountModePayG: {
 				BaseURLs: map[string]string{APIProtocolChatCompletions: DefaultClineBaseURL},
+			},
+		},
+	},
+	PlatformWorkbuddy: {
+		Platform:    PlatformWorkbuddy,
+		DefaultMode: AccountModePayG,
+		Routing:     ProviderRoutingByInbound,
+		// WorkBuddy 只提供 Chat Completions，按入站协议分流（其余入站由网关转换）。
+		// 它是自建部署的服务，没有公开官方域名：默认端点由管理端设置
+		// （SettingKeyWorkbuddyBaseURL）在运行期下发，未配置时为空串——账号必须
+		// 自己填写 base_url，此时不会回落到任何官方端点。
+		DefaultBaseURLResolver: workbuddyBaseURLDefault,
+		Modes: map[string]ProviderEndpoints{
+			AccountModePayG: {
+				BaseURLs: map[string]string{APIProtocolChatCompletions: ""},
 			},
 		},
 	},

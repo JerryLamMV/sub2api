@@ -71,6 +71,10 @@
     <rect x="65.5996" y="44.8008" width="9.6" height="28.8" rx="4.8" />
     <rect x="36.8008" y="44.8008" width="9.6" height="28.8" rx="4.8" />
   </svg>
+  <!-- WorkBuddy monogram -->
+  <svg v-else-if="platform === 'workbuddy'" :class="sizeClass" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M4.15 4.5h2.34l2.1 10.44 2.41-9.01h2.02l2.41 9.01 2.1-10.44h2.34l-2.97 15h-2.63l-2.26-8.87-2.26 8.87H7.12L4.15 4.5z" />
+  </svg>
   <!-- Composite group icon -->
   <svg v-else-if="platform === 'composite'" :class="sizeClass" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
     <circle cx="6" cy="12" r="3" />

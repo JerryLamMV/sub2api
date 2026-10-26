@@ -1526,7 +1526,12 @@ func (a *Account) GetOpenAIBaseURL() string {
 	if baseURL := a.defaultProviderBaseURL(APIProtocolChatCompletions); baseURL != "" {
 		return baseURL
 	}
-	return "https://api.openai.com"
+	// 多协议供应商（含自建部署、端点由管理端设置下发的 WorkBuddy）没有可用端点时
+	// 不能回落到 OpenAI 官方域名，否则第三方 Key 会被发往 api.openai.com。
+	if a.IsOpenAI() {
+		return "https://api.openai.com"
+	}
+	return ""
 }
 
 // GetAccountMode 返回国产供应商账号的接入模式（payg / coding）；非国产供应商或未设置时

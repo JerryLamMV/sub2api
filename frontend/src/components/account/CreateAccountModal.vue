@@ -4257,6 +4257,8 @@ const baseUrlHint = computed(() => {
   if (form.platform === 'openai') return t('admin.accounts.openai.baseUrlHint')
   if (form.platform === 'gemini') return t('admin.accounts.gemini.baseUrlHint')
   if (form.platform === 'grok') return ''
+  // WorkBuddy 是自建部署：默认端点来自管理端设置，没有内置官方域名。
+  if (form.platform === 'workbuddy') return t('admin.accounts.workbuddyBaseUrlHint')
   return t('admin.accounts.baseUrlHint')
 })
 

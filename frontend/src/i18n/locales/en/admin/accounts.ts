@@ -116,6 +116,7 @@ export default {
         minimax: 'MiniMax',
         opencode_go: 'OpenCode',
         typesafe: 'TypeSafe / Jev',
+        workbuddy: 'WorkBuddy',
       },
       cnProviders: {
         accountMode: {
@@ -626,6 +627,7 @@ export default {
       setupTokenLongLived: 'Setup Token (Long-lived)',
       baseUrl: 'Base URL',
       baseUrlHint: 'Leave default for official Anthropic API',
+      workbuddyBaseUrlHint: 'Leave empty to use the WorkBuddy default URL from admin settings; fill it in when that is not configured either',
       apiKeyRequired: 'API Key *',
       apiKeyPlaceholder: 'sk-ant-api03-...',
       apiKeyHint: 'Your Claude Console API Key',

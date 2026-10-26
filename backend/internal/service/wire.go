@@ -810,6 +810,11 @@ func ProvideSettingService(scopedKeys ScopedAdminKeyRepository, settingRepo Sett
 		logger.LegacyPrintf("service.setting", "Warning: migrate Grok default text model failed: %v", err)
 	}
 	antigravity.SetUserAgentVersionResolver(svc.GetAntigravityUserAgentVersion)
+	// WorkBuddy 是自建部署，端点不编译进代码，由管理端设置下发；provider profile 的
+	// 默认端点解析器拿不到 ctx，故注入无参解析器（内部自带 60s TTL 缓存，热路径不触库）。
+	SetWorkbuddyBaseURLResolver(func() string {
+		return svc.GetWorkbuddyBaseURL(context.Background())
+	})
 	// enforceCodexIdentityHeaders 是所有 Codex 出站路径共用的纯函数收口点，拿不到 ctx，
 	// 故注入无参解析器；解析器内部自带 60s TTL 缓存，热路径不触库。
 	SetCodexCanonicalUserAgentResolver(func() string {

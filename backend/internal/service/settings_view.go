@@ -210,6 +210,10 @@ type SystemSettings struct {
 	GrokCrossClientModelMapEnabled bool   `json:"grok_cross_client_model_map_enabled"`
 	GrokDefaultBaseURLMode         string `json:"grok_default_base_url_mode"`
 
+	// WorkBuddy 默认端点（admin settings）。自建部署没有公开官方域名：留空表示未配置，
+	// 此时该平台的账号必须自带 credentials.base_url，且不会回落到任何官方端点。
+	WorkbuddyBaseURL string `json:"workbuddy_base_url"`
+
 	// Available Channels feature (user-facing aggregate view)
 	AvailableChannelsEnabled bool `json:"available_channels_enabled"`
 

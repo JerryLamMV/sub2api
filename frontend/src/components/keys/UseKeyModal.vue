@@ -1325,6 +1325,7 @@ function generateRoutedCodexFiles(
     typesafe: 'TypeSafe / Jev',
     command_code: 'Command Code',
     cline: 'Cline',
+    workbuddy: 'WorkBuddy',
     composite: 'Composite'
   }
   const label = labels[platform]

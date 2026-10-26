@@ -505,6 +505,8 @@ export default {
         grokBaseURLModeUSEast1: 'Regional API (us-east-1)',
         grokBaseURLModeUSWest2: 'Regional API (us-west-2)',
         grokBaseURLModeEUWest1: 'Regional API (eu-west-1)',
+        workbuddyBaseURL: 'WorkBuddy upstream base URL',
+        workbuddyBaseURLHint: 'WorkBuddy is self-hosted and has no public host, so this endpoint is configured here instead of being built in. Used only when a WorkBuddy account has no explicit base URL; leave empty to require every WorkBuddy account to set its own. Takes effect without a restart.',
         openaiTTFTMode: 'OpenAI Responses first-token metric',
         openaiTTFTModeSemantic: 'Legacy-compatible (semantic event)',
         openaiTTFTModeVisible: 'Actual visible output',

@@ -52,6 +52,7 @@ const (
 	PlatformTypeSafe    = domain.PlatformTypeSafe
 	PlatformCommandCode = domain.PlatformCommandCode
 	PlatformCline       = domain.PlatformCline
+	PlatformWorkbuddy   = domain.PlatformWorkbuddy
 	PlatformComposite   = domain.PlatformComposite
 	// PlatformKiro is retained for unsupported-platform threshold tests and legacy
 	// account rows. Scheduling-threshold evaluation never pauses kiro accounts.
@@ -527,6 +528,12 @@ const (
 	// SettingKeyGrokDefaultBaseURLMode controls the default text upstream for
 	// Grok accounts without an explicit credentials.base_url.
 	SettingKeyGrokDefaultBaseURLMode = "grok_default_base_url_mode"
+
+	// SettingKeyWorkbuddyBaseURL 是 WorkBuddy 平台账号未显式填写 credentials.base_url 时
+	// 使用的默认端点（{base}/chat/completions、{base}/models）。WorkBuddy 为自建部署，
+	// 没有公开的官方域名，因此不内置默认值，由管理端设置下发；留空时该平台的账号必须
+	// 自己填写 base_url，且不会有任何回落到 OpenAI 官方端点。
+	SettingKeyWorkbuddyBaseURL = "workbuddy_base_url"
 
 	// SettingKeyAvailableChannelsEnabled is a DB-backed soft switch for the "Available Channels"
 	// user-facing aggregate view. When false: user endpoint returns an empty list and the

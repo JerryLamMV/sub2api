@@ -276,9 +276,14 @@ export function isMultiProtocolApiKeyPlatform(platform: string): boolean {
   return !!getProviderProfile(platform)
 }
 
-/** 供应商在该接入模式下是否提供某协议的原生端点（未知模式按默认模式）。 */
+/**
+ * 供应商在该接入模式下是否提供某协议的原生端点（未知模式按默认模式）。
+ * 只看协议是否登记：端点由管理端设置下发的供应商（WorkBuddy）在配置前 base_urls
+ * 里是空串，但协议能力仍然成立。
+ */
 export function providerSupportsProtocol(platform: string, mode: string | undefined, protocol: CnNativeApiProtocol): boolean {
-  return !!getProviderMode(platform, mode)?.base_urls[protocol]
+  const baseUrls = getProviderMode(platform, mode)?.base_urls
+  return !!baseUrls && protocol in baseUrls
 }
 
 /** 供应商是否提供原生 Responses 端点（DeepSeek / Kimi / MiniMax / OpenCode 等）。 */

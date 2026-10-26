@@ -429,6 +429,13 @@ func (s *SettingService) buildSystemSettingsUpdates(ctx context.Context, setting
 	updates[SettingKeyGrokCrossClientModelMapEnabled] = strconv.FormatBool(settings.GrokCrossClientModelMapEnabled)
 	updates[SettingKeyGrokDefaultBaseURLMode] = normalizeGrokDefaultBaseURLMode(settings.GrokDefaultBaseURLMode)
 
+	// WorkBuddy 默认端点（自建部署，没有官方域名）：留空即"未配置"，此时该平台的
+	// 账号必须自带 base_url；非空必须是 http/https 绝对地址。
+	if err := ValidateWorkbuddyBaseURL(settings.WorkbuddyBaseURL); err != nil {
+		return nil, infraerrors.BadRequest("INVALID_WORKBUDDY_BASE_URL", err.Error())
+	}
+	updates[SettingKeyWorkbuddyBaseURL] = NormalizeWorkbuddyBaseURL(settings.WorkbuddyBaseURL)
+
 	// Available channels feature switch
 	updates[SettingKeyAvailableChannelsEnabled] = strconv.FormatBool(settings.AvailableChannelsEnabled)
 
@@ -714,6 +721,12 @@ func (s *SettingService) refreshCachedSettings(settings *SystemSettings) {
 	backendModeCache.Store(&cachedBackendMode{
 		value:     settings.BackendModeEnabled,
 		expiresAt: time.Now().Add(backendModeCacheTTL).UnixNano(),
+	})
+	// WorkBuddy 默认端点：面板保存后立即生效，不等 60s TTL。
+	s.workbuddyBaseURLSF.Forget(workbuddyBaseURLSFKey)
+	s.workbuddyBaseURLCache.Store(&cachedWorkbuddyBaseURL{
+		baseURL:   NormalizeWorkbuddyBaseURL(settings.WorkbuddyBaseURL),
+		expiresAt: time.Now().Add(workbuddyBaseURLCacheTTL).UnixNano(),
 	})
 	gatewayForwardingSF.Forget("gateway_forwarding")
 	gatewayForwardingCache.Store(&cachedGatewayForwardingSettings{

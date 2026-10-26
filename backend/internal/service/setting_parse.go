@@ -199,6 +199,10 @@ func (s *SettingService) InitializeDefaultSettings(ctx context.Context) error {
 		SettingKeyGrokCrossClientModelMapEnabled: "true",
 		SettingKeyGrokDefaultBaseURLMode:         GrokDefaultBaseURLModeCLI,
 
+		// WorkBuddy 默认端点：自建部署没有官方域名，默认留空（未配置），
+		// 由管理端在面板里填写后经 SettingKeyWorkbuddyBaseURL 下发。
+		SettingKeyWorkbuddyBaseURL: "",
+
 		// Available channels feature (default disabled; opt-in)
 		SettingKeyAvailableChannelsEnabled: "false",
 
@@ -823,6 +827,10 @@ func (s *SettingService) parseSettings(settings map[string]string) *SystemSettin
 	// Operators can set false to disable silent cross-client rewrite.
 	result.GrokCrossClientModelMapEnabled = !isFalseSettingValue(settings[SettingKeyGrokCrossClientModelMapEnabled])
 	result.GrokDefaultBaseURLMode = normalizeGrokDefaultBaseURLMode(settings[SettingKeyGrokDefaultBaseURLMode])
+
+	// WorkBuddy 默认端点（自建部署，管理端下发）：归一化后交给 provider profile 的
+	// 运行期解析器（见 workbuddyBaseURLDefault），留空表示未配置。
+	result.WorkbuddyBaseURL = NormalizeWorkbuddyBaseURL(settings[SettingKeyWorkbuddyBaseURL])
 
 	// Available channels feature (default: disabled; strict true)
 	result.AvailableChannelsEnabled = settings[SettingKeyAvailableChannelsEnabled] == "true"

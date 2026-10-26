@@ -498,6 +498,8 @@ export default {
         grokBaseURLModeUSEast1: '区域 API（us-east-1）',
         grokBaseURLModeUSWest2: '区域 API（us-west-2）',
         grokBaseURLModeEUWest1: '区域 API（eu-west-1）',
+        workbuddyBaseURL: 'WorkBuddy 上游地址',
+        workbuddyBaseURLHint: 'WorkBuddy 是自建部署的服务，没有公开域名，因此端点在这里配置而不是内置。仅用于未填写 base URL 的 WorkBuddy 账号；留空则要求每个账号自行填写。保存后无需重启即生效。',
         openaiTTFTMode: 'OpenAI Responses 首 token 统计口径',
         openaiTTFTModeSemantic: '历史兼容（语义事件）',
         openaiTTFTModeVisible: '真实可见输出',
