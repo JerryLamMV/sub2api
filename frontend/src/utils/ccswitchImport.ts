@@ -23,6 +23,9 @@ export interface CcSwitchImportDeeplinkInput {
   providerName: string
   apiKey: string
   usageScript: string
+  /** 用量查询开关，默认关闭。关闭时脚本仍随 deeplink 下发，CC Switch
+   * 保存但不激活，之后可在 CC Switch 里一键打开。 */
+  usageEnabled?: boolean
   /** 分组真实可用的模型名。国产模型与复合分组不提供原生 Claude/GPT 模型，
    * 不带模型导入后客户端首个请求即 404，导入时应尽量提供。 */
   model?: string
@@ -248,7 +251,7 @@ export function buildCcSwitchImportDeeplink(input: CcSwitchImportDeeplinkInput):
     ['endpoint', config.endpoint],
     ['apiKey', input.apiKey],
     ['configFormat', 'json'],
-    ['usageEnabled', 'true'],
+    ['usageEnabled', input.usageEnabled ? 'true' : 'false'],
     ['usageScript', btoa(input.usageScript)],
     ['usageAutoInterval', '30']
   ]

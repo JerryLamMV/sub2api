@@ -292,7 +292,9 @@ export default {
       modelLabel: 'Default Model',
       modelLoading: 'Loading models available to this group…',
       modelFailed: 'Failed to load the model list; enter a model name manually',
-      modelManualPlaceholder: 'Enter a model available to this group'
+      modelManualPlaceholder: 'Enter a model available to this group',
+      usageQueryLabel: 'Enable Usage Query',
+      usageQueryHint: 'Let CC Switch auto-query the remaining balance after import; when off the query script is still imported and can be enabled later in CC Switch'
     },
     // Quota and expiration
     quotaLimit: 'Quota Limit',

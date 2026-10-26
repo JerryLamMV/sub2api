@@ -220,6 +220,52 @@ describe('ccswitchImport utils', () => {
         .toBe('gemini-2.5-pro')
     })
   })
+
+  describe('usage query toggle', () => {
+    it('activates the usage query when the toggle is on', () => {
+      const params = paramsFromDeeplink(
+        buildCcSwitchImportDeeplink({
+          ...baseInput,
+          platform: 'anthropic',
+          clientType: 'claude',
+          usageEnabled: true
+        })
+      )
+
+      expect(params.get('usageEnabled')).toBe('true')
+      expect(atob(params.get('usageScript') || '')).toBe(baseInput.usageScript)
+      expect(params.get('usageAutoInterval')).toBe('30')
+    })
+
+    // 关闭时脚本仍随 deeplink 下发：CC Switch 会保存但保持未启用，
+    // 之后在 CC Switch 里一键打开即可，无需重新配置脚本。
+    it('imports the usage script inactive when the toggle is off', () => {
+      const params = paramsFromDeeplink(
+        buildCcSwitchImportDeeplink({
+          ...baseInput,
+          platform: 'anthropic',
+          clientType: 'claude',
+          usageEnabled: false
+        })
+      )
+
+      expect(params.get('usageEnabled')).toBe('false')
+      expect(atob(params.get('usageScript') || '')).toBe(baseInput.usageScript)
+      expect(params.get('usageAutoInterval')).toBe('30')
+    })
+
+    it('defaults the usage query to off when unspecified', () => {
+      const params = paramsFromDeeplink(
+        buildCcSwitchImportDeeplink({
+          ...baseInput,
+          platform: 'anthropic',
+          clientType: 'claude'
+        })
+      )
+
+      expect(params.get('usageEnabled')).toBe('false')
+    })
+  })
 })
 
 describe('CC Switch client options', () => {

@@ -1116,6 +1116,17 @@
 	            {{ t('keys.ccsClientSelect.modelFailed') }}
 	          </p>
 	        </div>
+	        <div class="flex items-center justify-between gap-3 rounded-xl border border-gray-200 px-4 py-3 dark:border-dark-600">
+	          <div class="min-w-0">
+	            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+	              {{ t('keys.ccsClientSelect.usageQueryLabel') }}
+	            </span>
+	            <p class="text-xs text-gray-500 dark:text-gray-400">
+	              {{ t('keys.ccsClientSelect.usageQueryHint') }}
+	            </p>
+	          </div>
+	          <Toggle v-model="ccsUsageQueryEnabled" />
+	        </div>
 	        <div :class="ccsClientOptions.length >= 3 ? 'grid grid-cols-3 gap-3' : 'grid grid-cols-2 gap-3'">
 	          <button
 	            v-for="option in ccsClientOptions"
@@ -1232,6 +1243,7 @@ import BulkEditKeysModal from '@/components/keys/BulkEditKeysModal.vue'
 	import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 	import EmptyState from '@/components/common/EmptyState.vue'
 	import Select from '@/components/common/Select.vue'
+	import Toggle from '@/components/common/Toggle.vue'
 	import SearchInput from '@/components/common/SearchInput.vue'
 	import Icon from '@/components/icons/Icon.vue'
 	import UseKeyModal from '@/components/keys/UseKeyModal.vue'
@@ -1424,6 +1436,7 @@ const showResetRateLimitDialog = ref(false)
 const showUseKeyModal = ref(false)
 const showCcsClientSelect = ref(false)
 const ccsClientOptions = ref<CcSwitchClientOption[]>([])
+const ccsUsageQueryEnabled = ref(false)
 const ccsModelOptions = ref<string[]>([])
 const ccsSelectedModel = ref('')
 const ccsModelsLoading = ref(false)
@@ -2089,6 +2102,7 @@ const resetCcsModelState = () => {
   ccsSelectedModel.value = ''
   ccsModelsLoading.value = false
   ccsModelsFailed.value = false
+  ccsUsageQueryEnabled.value = false
 }
 
 const ccsModelSelectVisible = computed(() => {
@@ -2128,7 +2142,9 @@ const ccsClientLabels = computed<Record<CcSwitchClientType, { label: string; des
   }
 }))
 
-const executeCcsImport = (row: ApiKey, clientType: CcSwitchClientType, model?: string) => {
+// usageEnabled 默认关闭：用量查询脚本仍随 deeplink 下发，CC Switch 保存但
+// 不激活，用户需要时在 CC Switch 里打开即可。
+const executeCcsImport = (row: ApiKey, clientType: CcSwitchClientType, model?: string, usageEnabled = false) => {
   const baseUrl = publicSettings.value?.api_base_url || window.location.origin
   const platform = row.group?.platform || 'anthropic'
 
@@ -2141,6 +2157,7 @@ const executeCcsImport = (row: ApiKey, clientType: CcSwitchClientType, model?: s
     providerName,
     apiKey: row.key,
     usageScript,
+    usageEnabled,
     model
   })
 
@@ -2161,7 +2178,12 @@ const executeCcsImport = (row: ApiKey, clientType: CcSwitchClientType, model?: s
 
 const handleCcsClientSelect = (clientType: CcSwitchClientType) => {
   if (pendingCcsRow.value) {
-    executeCcsImport(pendingCcsRow.value, clientType, ccsSelectedModel.value.trim() || undefined)
+    executeCcsImport(
+      pendingCcsRow.value,
+      clientType,
+      ccsSelectedModel.value.trim() || undefined,
+      ccsUsageQueryEnabled.value
+    )
   }
   closeCcsClientSelect()
 }

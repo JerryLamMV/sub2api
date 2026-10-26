@@ -297,7 +297,9 @@ export default {
       modelLabel: '默认模型',
       modelLoading: '正在获取该分组可用的模型…',
       modelFailed: '获取模型列表失败，请手动填写模型名',
-      modelManualPlaceholder: '填写该分组可用的模型名'
+      modelManualPlaceholder: '填写该分组可用的模型名',
+      usageQueryLabel: '打开用量查询',
+      usageQueryHint: '导入后由 CC Switch 自动查询该密钥的剩余额度；关闭时查询脚本仍会导入，可稍后在 CC Switch 中开启'
     },
     // 配额和有效期
     quotaLimit: '额度限制',
